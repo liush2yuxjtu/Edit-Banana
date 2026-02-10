@@ -1,0 +1,91 @@
+# Edit-Banana Backend Configuration
+# 复制此文件为 config.yaml 并根据需要修改
+
+app:
+  name: "Edit-Banana"
+  version: "1.0.0"
+  debug: false
+  host: "0.0.0.0"
+  port: 8000
+
+# 模型配置
+models:
+  # SAM 3 分割模型
+  sam3:
+    checkpoint: "models/sam3_checkpoint.pth"
+    device: "mps"  # Mac MPS 加速，可选: cuda, cpu, mps
+    
+  # Stable Diffusion / Flux 图像生成
+  diffusion:
+    model_id: "black-forest-labs/FLUX.1-dev"
+    device: "mps"
+    dtype: "float16"
+    
+  # 可选: DINOv2 特征提取
+  dinov2:
+    model_name: "dinov2_vitb14"
+    device: "mps"
+
+# API Keys (优先从环境变量读取)
+api:
+  # Kimi API 配置（主用）
+  kimi:
+    base_url: "https://api.kimi.com/coding/"  # KIMI_BASE_URL
+    api_key: ""                               # ANTHROPIC_API_KEY 或 KIMI_API_KEY
+    model: "kimi-k2-5"                        # KIMI_MODEL
+    max_tokens: 4096
+    temperature: 0.7
+    timeout: 60.0
+    
+  # Azure OpenAI 配置（备用）
+  azure:
+    openai_endpoint: ""  # AZURE_OPENAI_ENDPOINT
+    openai_key: ""       # AZURE_OPENAI_KEY
+    openai_api_version: "2024-02-01"
+    deployment_name: "gpt-4"
+    
+  # Mistral AI 配置（备用）
+  mistral:
+    api_key: ""          # MISTRAL_API_KEY
+    model: "mistral-large-latest"
+    
+  # 可选: OpenAI 直接配置（备用）
+  openai:
+    api_key: ""          # OPENAI_API_KEY
+    model: "gpt-4"
+
+# Kimi 特定配置（用于 OCR 和公式识别）
+kimi:
+  base_url: "https://api.kimi.com/coding/"
+  model: "kimi-k2-5"
+  max_tokens: 4096
+  temperature: 0.7
+  timeout: 60.0
+  
+  # OCR 配置
+  ocr:
+    min_confidence: 0.6
+    return_coordinates: true
+    
+  # 公式识别配置
+  formula:
+    min_confidence: 0.6
+    validate_latex: true
+
+# 路径配置
+paths:
+  input: "input"
+  output: "output"
+  models: "models"
+  temp: "/tmp/edit-banana"
+
+# 处理配置
+processing:
+  max_image_size: 2048
+  supported_formats: ["jpg", "jpeg", "png", "webp"]
+  
+# 日志配置
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/edit-banana.log"

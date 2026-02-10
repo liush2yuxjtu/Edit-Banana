@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PPTX 预览 - Edit-Banana</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #1e1e1e;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .header {
+            background: #2d2d2d;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #444;
+        }
+        .header h1 {
+            color: #fff;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .header .actions {
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-primary {
+            background: #d83b01;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #c43501;
+        }
+        .btn-secondary {
+            background: #555;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #666;
+        }
+        .container {
+            height: calc(100vh - 60px);
+            display: flex;
+        }
+        .sidebar {
+            width: 200px;
+            background: #2d2d2d;
+            border-right: 1px solid #444;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .sidebar h3 {
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        .slide-thumb {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #444;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: border-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #888;
+            font-size: 12px;
+        }
+        .slide-thumb:hover, .slide-thumb.active {
+            border-color: #d83b01;
+        }
+        .preview-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .toolbar {
+            background: #2d2d2d;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            border-bottom: 1px solid #444;
+        }
+        .toolbar button {
+            background: #444;
+            border: none;
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .toolbar button:hover {
+            background: #555;
+        }
+        .toolbar span {
+            color: #888;
+            font-size: 14px;
+        }
+        .viewer {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: #1a1a1a;
+        }
+        .viewer iframe, .viewer img {
+            max-width: 100%;
+            max-height: 100%;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        .viewer-placeholder {
+            text-align: center;
+            color: #666;
+        }
+        .info-panel {
+            background: #2d2d2d;
+            padding: 15px 20px;
+            border-top: 1px solid #444;
+            color: #888;
+            font-size: 13px;
+        }
+        .viewer-options {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .viewer-option {
+            flex: 1;
+            padding: 15px;
+            background: #444;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #fff;
+            text-decoration: none;
+        }
+        .viewer-option:hover {
+            background: #555;
+        }
+        .viewer-option .icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+        .viewer-option .label {
+            font-size: 12px;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 PPTX 预览 - {{ task_id }}</h1>
+        <div class="actions">
+            <a href="/api/v1/download/{{ task_id }}.pptx" class="btn btn-secondary" download>
+                ⬇️ 下载 PPTX
+            </a>
+            <a href="/api/v1/download/{{ task_id }}.pdf" class="btn btn-primary" download>
+                📄 下载 PDF
+            </a>
+        </div>
+    </div>
+    <div class="container">
+        <div class="sidebar">
+            <h3>幻灯片</h3>
+            {% for slide in slides %}
+            <div class="slide-thumb {% if loop.first %}active{% endif %}" data-slide="{{ loop.index }}">
+                {{ slide.name }}
+            </div>
+            {% endfor %}
+        </div>
+        <div class="preview-area">
+            <div class="toolbar">
+                <button onclick="prevSlide()">◀ 上一页</button>
+                <span id="page-indicator">第 1 / {{ slide_count }} 页</span>
+                <button onclick="nextSlide()">下一页 ▶</button>
+            </div>
+            <div class="viewer" id="viewer">
+                {% if use_office_online %}
+                <iframe 
+                    src="https://view.officeapps.live.com/op/embed.aspx?src={{ file_url | urlencode }}" 
+                    width="100%" 
+                    height="100%" 
+                    frameborder="0">
+                </iframe>
+                {% elif preview_images %}
+                <img id="slide-image" src="{{ slides[0].url }}" alt="Slide 1">
+                {% else %}
+                <div class="viewer-placeholder">
+                    <h3 style="margin-bottom: 20px;">选择预览方式</h3>
+                    <div class="viewer-options">
+                        <a href="https://view.officeapps.live.com/op/view.aspx?src={{ file_url | urlencode }}" 
+                           target="_blank" class="viewer-option">
+                            <div class="icon">🌐</div>
+                            <div>Office Online</div>
+                            <div class="label">在线查看</div>
+                        </a>
+                        <a href="https://docs.google.com/gview?url={{ file_url | urlencode }}&embedded=true" 
+                           target="_blank" class="viewer-option">
+                            <div class="icon">📑</div>
+                            <div>Google Docs</div>
+                            <div class="label">在线查看</div>
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            <div class="info-panel">
+                文件名: {{ filename }} | 大小: {{ file_size }} | 页数: {{ slide_count }}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const slides = {{ slides | tojson }};
+        let currentSlide = 0;
+
+        function updateSlide() {
+            const img = document.getElementById('slide-image');
+            if (img && slides[currentSlide]) {
+                img.src = slides[currentSlide].url;
+            }
+            document.getElementById('page-indicator').textContent = 
+                `第 ${currentSlide + 1} / ${slides.length} 页`;
+            
+            // Update sidebar active state
+            document.querySelectorAll('.slide-thumb').forEach((thumb, idx) => {
+                thumb.classList.toggle('active', idx === currentSlide);
+            });
+        }
+
+        function nextSlide() {
+            if (currentSlide < slides.length - 1) {
+                currentSlide++;
+                updateSlide();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateSlide();
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                prevSlide();
+            }
+        });
+
+        // Click on thumbnails
+        document.querySelectorAll('.slide-thumb').forEach((thumb, idx) => {
+            thumb.addEventListener('click', () => {
+                currentSlide = idx;
+                updateSlide();
+            });
+        });
+    </script>
+</body>
+</html>

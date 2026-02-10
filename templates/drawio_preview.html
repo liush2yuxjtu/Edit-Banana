@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DrawIO 预览 - Edit-Banana</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #1e1e1e;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .header {
+            background: #2d2d2d;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #444;
+        }
+        .header h1 {
+            color: #fff;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .header .actions {
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #45a049;
+        }
+        .btn-secondary {
+            background: #555;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #666;
+        }
+        .container {
+            height: calc(100vh - 60px);
+            position: relative;
+        }
+        #drawio-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            text-align: center;
+        }
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #444;
+            border-top-color: #4CAF50;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ff6b6b;
+            text-align: center;
+            padding: 20px;
+        }
+        .error h2 {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🍌 DrawIO 编辑器 - {{ task_id }}</h1>
+        <div class="actions">
+            <a href="/api/v1/download/{{ task_id }}.drawio" class="btn btn-secondary" download>
+                ⬇️ 下载
+            </a>
+            <button class="btn btn-primary" onclick="exportImage()">
+                🖼️ 导出图片
+            </button>
+        </div>
+    </div>
+    <div class="container">
+        <div id="loading" class="loading">
+            <div class="loading-spinner"></div>
+            <p>正在加载 DrawIO 编辑器...</p>
+        </div>
+        <iframe id="drawio-frame" style="display: none;"></iframe>
+    </div>
+
+    <script>
+        // DrawIO XML 数据 (Base64 编码)
+        const drawioXml = `{{ xml_content }}`;
+        const iframe = document.getElementById('drawio-frame');
+        const loading = document.getElementById('loading');
+
+        // 构建 DrawIO Embed URL
+        const embedUrl = `https://embed.diagrams.net/?embed=1&proto=json&configure=1&xml=${encodeURIComponent(drawioXml)}`;
+        
+        iframe.src = embedUrl;
+        
+        // 监听 iframe 加载完成
+        iframe.onload = function() {
+            loading.style.display = 'none';
+            iframe.style.display = 'block';
+        };
+
+        // 与 DrawIO 通信
+        window.addEventListener('message', function(event) {
+            if (event.origin !== 'https://embed.diagrams.net') return;
+            
+            const msg = JSON.parse(event.data);
+            console.log('DrawIO Event:', msg);
+            
+            switch(msg.event) {
+                case 'init':
+                    // 编辑器初始化完成
+                    loading.style.display = 'none';
+                    iframe.style.display = 'block';
+                    break;
+                case 'save':
+                    // 保存事件
+                    console.log('Saving...', msg.xml);
+                    // 可以在这里添加自动保存逻辑
+                    break;
+                case 'export':
+                    // 导出事件
+                    console.log('Export:', msg.data);
+                    break;
+            }
+        });
+
+        // 导出图片功能
+        function exportImage() {
+            const message = JSON.stringify({
+                action: 'export',
+                format: 'png',
+                border: 10,
+                crop: false
+            });
+            iframe.contentWindow.postMessage(message, 'https://embed.diagrams.net');
+        }
+
+        // 处理加载错误
+        iframe.onerror = function() {
+            loading.innerHTML = `
+                <div class="error">
+                    <h2>⚠️ 加载失败</h2>
+                    <p>无法加载 DrawIO 编辑器，请检查网络连接</p>
+                </div>
+            `;
+        };
+    </script>
+</body>
+</html>

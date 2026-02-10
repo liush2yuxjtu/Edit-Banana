@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>对比视图 - Edit-Banana</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #1e1e1e;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .header {
+            background: #2d2d2d;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #444;
+        }
+        .header h1 {
+            color: #fff;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .header .actions {
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+        .btn-secondary {
+            background: #555;
+            color: white;
+        }
+        .container {
+            height: calc(100vh - 60px);
+            display: flex;
+        }
+        .sidebar {
+            width: 250px;
+            background: #2d2d2d;
+            border-right: 1px solid #444;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-header {
+            padding: 15px;
+            border-bottom: 1px solid #444;
+        }
+        .sidebar-header h3 {
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        .sidebar-header p {
+            color: #888;
+            font-size: 12px;
+        }
+        .segment-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        .segment-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: #3d3d3d;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+        .segment-item:hover {
+            background: #4d4d4d;
+        }
+        .segment-item.active {
+            border-color: #4CAF50;
+            background: #354d35;
+        }
+        .segment-thumb {
+            width: 50px;
+            height: 50px;
+            background: #555;
+            border-radius: 4px;
+            object-fit: cover;
+        }
+        .segment-info {
+            flex: 1;
+        }
+        .segment-type {
+            color: #fff;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .segment-id {
+            color: #888;
+            font-size: 11px;
+        }
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .toolbar {
+            background: #2d2d2d;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            border-bottom: 1px solid #444;
+        }
+        .view-mode {
+            display: flex;
+            background: #3d3d3d;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .view-mode button {
+            padding: 8px 16px;
+            border: none;
+            background: transparent;
+            color: #aaa;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .view-mode button.active {
+            background: #4CAF50;
+            color: white;
+        }
+        .zoom-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #888;
+        }
+        .zoom-control button {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: #3d3d3d;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .viewer {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: #1a1a1a;
+        }
+        /* Side by Side View */
+        .viewer.side-by-side {
+            display: flex;
+        }
+        .viewer.side-by-side .image-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        .viewer.side-by-side .image-panel:first-child {
+            border-right: 2px solid #444;
+        }
+        .panel-label {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 10;
+        }
+        /* Slider View */
+        .viewer.slider {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .slider-container {
+            position: relative;
+            width: 90%;
+            height: 90%;
+        }
+        .slider-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .slider-image.after {
+            clip-path: inset(0 50% 0 0);
+        }
+        .slider-handle {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            width: 4px;
+            background: #4CAF50;
+            cursor: ew-resize;
+            z-index: 20;
+            transform: translateX(-50%);
+        }
+        .slider-handle::before {
+            content: '◀ ▶';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #4CAF50;
+            color: white;
+            padding: 8px 4px;
+            border-radius: 4px;
+            font-size: 10px;
+        }
+        /* Overlay View */
+        .viewer.overlay {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .overlay-container {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+        }
+        .overlay-image {
+            max-width: 100%;
+            max-height: 90vh;
+            object-fit: contain;
+        }
+        .overlay-image.top {
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0.5;
+        }
+        .opacity-control {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            padding: 10px 20px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
+        }
+        .opacity-control input[type="range"] {
+            width: 150px;
+        }
+        .image-panel img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .segment-overlay {
+            position: absolute;
+            border: 2px solid #4CAF50;
+            background: rgba(76, 175, 80, 0.1);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .segment-overlay:hover {
+            background: rgba(76, 175, 80, 0.3);
+        }
+        .segment-overlay.highlighted {
+            border-color: #ffeb3b;
+            background: rgba(255, 235, 59, 0.3);
+            box-shadow: 0 0 10px rgba(255, 235, 59, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔍 分割结果对比 - {{ file_id }}</h1>
+        <div class="actions">
+            <button class="btn btn-secondary" onclick="downloadOriginal()">
+                ⬇️ 原图
+            </button>
+            <button class="btn btn-secondary" onclick="downloadAnnotated()">
+                ⬇️ 标注图
+            </button>
+            <a href="/api/v1/download/{{ task_id }}.drawio" class="btn btn-primary" download>
+                ⬇️ 下载 DrawIO
+            </a>
+        </div>
+    </div>
+    <div class="container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h3>分割元素 ({{ segments | length }})</h3>
+                <p>点击元素高亮显示</p>
+            </div>
+            <div class="segment-list">
+                {% for segment in segments %}
+                <div class="segment-item" data-segment-id="{{ segment.id }}" onclick="highlightSegment({{ segment.id }})">
+                    <img class="segment-thumb" src="{{ segment.thumbnail_url }}" alt="Segment {{ segment.id }}">
+                    <div class="segment-info">
+                        <div class="segment-type">{{ segment.type }}</div>
+                        <div class="segment-id">#{{ segment.id }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="main-content">
+            <div class="toolbar">
+                <div class="view-mode">
+                    <button class="active" onclick="setViewMode('slider')">滑块对比</button>
+                    <button onclick="setViewMode('side-by-side')">并列显示</button>
+                    <button onclick="setViewMode('overlay')">叠加显示</button>
+                </div>
+                <div class="zoom-control">
+                    <button onclick="zoomOut()">−</button>
+                    <span id="zoom-level">100%</span>
+                    <button onclick="zoomIn()">+</button>
+                </div>
+            </div>
+            <div class="viewer slider" id="viewer">
+                <!-- Slider View -->
+                <div class="slider-container" id="slider-view">
+                    <img class="slider-image" src="{{ original_url }}" alt="Original">
+                    <img class="slider-image after" src="{{ annotated_url }}" alt="Annotated" id="slider-after">
+                    <div class="slider-handle" id="slider-handle"></div>
+                </div>
+                <!-- Side by Side View (hidden by default) -->
+                <div class="image-panel" id="side-left" style="display: none;">
+                    <span class="panel-label">原始图片</span>
+                    <img src="{{ original_url }}" alt="Original" id="original-img">
+                </div>
+                <div class="image-panel" id="side-right" style="display: none;">
+                    <span class="panel-label">分割标注</span>
+                    <img src="{{ annotated_url }}" alt="Annotated" id="annotated-img">
+                </div>
+                <!-- Overlay View (hidden by default) -->
+                <div class="overlay-container" id="overlay-view" style="display: none;">
+                    <img class="overlay-image" src="{{ original_url }}" alt="Original">
+                    <img class="overlay-image top" src="{{ annotated_url }}" alt="Annotated" id="overlay-top">
+                    <div class="opacity-control">
+                        <span>原图</span>
+                        <input type="range" min="0" max="100" value="50" oninput="updateOpacity(this.value)">
+                        <span>标注</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const segments = {{ segments | tojson }};
+        let currentZoom = 100;
+        let currentMode = 'slider';
+
+        // Slider functionality
+        const sliderContainer = document.getElementById('slider-view');
+        const sliderHandle = document.getElementById('slider-handle');
+        const sliderAfter = document.getElementById('slider-after');
+        let isDragging = false;
+
+        sliderHandle.addEventListener('mousedown', () => isDragging = true);
+        document.addEventListener('mouseup', () => isDragging = false);
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const rect = sliderContainer.getBoundingClientRect();
+            const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+            const percent = x * 100;
+            sliderHandle.style.left = percent + '%';
+            sliderAfter.style.clipPath = `inset(0 ${100 - percent}% 0 0)`;
+        });
+
+        // Touch support
+        sliderHandle.addEventListener('touchstart', () => isDragging = true);
+        document.addEventListener('touchend', () => isDragging = false);
+        document.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            const touch = e.touches[0];
+            const rect = sliderContainer.getBoundingClientRect();
+            const x = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
+            const percent = x * 100;
+            sliderHandle.style.left = percent + '%';
+            sliderAfter.style.clipPath = `inset(0 ${100 - percent}% 0 0)`;
+        });
+
+        function setViewMode(mode) {
+            currentMode = mode;
+            const viewer = document.getElementById('viewer');
+            const sliderView = document.getElementById('slider-view');
+            const sideLeft = document.getElementById('side-left');
+            const sideRight = document.getElementById('side-right');
+            const overlayView = document.getElementById('overlay-view');
+
+            // Update button states
+            document.querySelectorAll('.view-mode button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Hide all views
+            sliderView.style.display = 'none';
+            sideLeft.style.display = 'none';
+            sideRight.style.display = 'none';
+            overlayView.style.display = 'none';
+
+            // Show selected view
+            viewer.className = 'viewer ' + mode;
+            if (mode === 'slider') {
+                sliderView.style.display = 'block';
+            } else if (mode === 'side-by-side') {
+                sideLeft.style.display = 'flex';
+                sideRight.style.display = 'flex';
+            } else if (mode === 'overlay') {
+                overlayView.style.display = 'block';
+            }
+        }
+
+        function updateOpacity(value) {
+            document.getElementById('overlay-top').style.opacity = value / 100;
+        }
+
+        function zoomIn() {
+            currentZoom = Math.min(200, currentZoom + 25);
+            applyZoom();
+        }
+
+        function zoomOut() {
+            currentZoom = Math.max(25, currentZoom - 25);
+            applyZoom();
+        }
+
+        function applyZoom() {
+            document.getElementById('zoom-level').textContent = currentZoom + '%';
+            const images = document.querySelectorAll('img');
+            images.forEach(img => {
+                img.style.transform = `scale(${currentZoom / 100})`;
+            });
+        }
+
+        function highlightSegment(segmentId) {
+            // Update sidebar
+            document.querySelectorAll('.segment-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.segmentId == segmentId);
+            });
+
+            // Get segment data
+            const segment = segments.find(s => s.id == segmentId);
+            if (!segment || !segment.bbox) return;
+
+            // Remove existing overlays
+            document.querySelectorAll('.segment-overlay').forEach(el => el.remove());
+
+            // Add highlight overlay to annotated image
+            const annotatedImg = document.getElementById('annotated-img') || document.getElementById('slider-after');
+            const container = annotatedImg.parentElement;
+            
+            const overlay = document.createElement('div');
+            overlay.className = 'segment-overlay highlighted';
+            // Position overlay based on bbox (normalized coordinates)
+            overlay.style.left = (segment.bbox[0] * 100) + '%';
+            overlay.style.top = (segment.bbox[1] * 100) + '%';
+            overlay.style.width = ((segment.bbox[2] - segment.bbox[0]) * 100) + '%';
+            overlay.style.height = ((segment.bbox[3] - segment.bbox[1]) * 100) + '%';
+            container.appendChild(overlay);
+        }
+
+        function downloadOriginal() {
+            window.open('{{ original_url }}', '_blank');
+        }
+
+        function downloadAnnotated() {
+            window.open('{{ annotated_url }}', '_blank');
+        }
+    </script>
+</body>
+</html>

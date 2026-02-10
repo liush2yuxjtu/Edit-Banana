@@ -1,0 +1,39 @@
+# Edit-Banana 依赖 - 全量 Kimi 方案
+# 安装: pip install -r requirements.txt
+
+# Web 框架
+fastapi
+uvicorn
+python-multipart
+
+# Streamlit 界面
+streamlit
+
+# 模板引擎 (server_pa.py 需要)
+jinja2
+
+# 配置和环境
+python-dotenv
+pyyaml
+
+# 数据验证
+pydantic
+
+# 图像处理
+pillow
+numpy
+opencv-python
+
+# 深度学习
+torch
+torchvision
+
+# LLM 客户端 - Kimi API（Anthropic 格式）
+anthropic
+
+# 可选依赖
+onnxruntime
+spandrel
+requests
+httpx
+aiofiles

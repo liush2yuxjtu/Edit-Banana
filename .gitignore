@@ -1,0 +1,79 @@
+# ===========================================
+# Edit-Banana .gitignore
+# 大模型文件和敏感信息保护
+# ===========================================
+
+# 1. 大文件/模型 (最高优先级)
+# Models - 大模型文件 (>3GB each)
+models/*.pth
+models/*.pt
+models/*.safetensors
+models/*.ckpt
+models/*.bin
+models/checkpoints/
+
+# 2. 敏感信息
+# Environment variables
+.env
+.env.local
+.env.production
+.env.*.local
+
+# API Keys and secrets
+secrets.yaml
+secrets.json
+*.pem
+*.key
+
+# 3. 用户数据/上传文件
+# User uploads
+uploads/*
+!uploads/.gitkeep
+
+# Generated outputs
+outputs/*
+!outputs/.gitkeep
+output/*
+input/*
+!input/.gitkeep
+
+# 4. Python/Node 缓存
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 5. IDE/OS 文件
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 6. 日志和临时文件
+# Logs
+logs/*.log
+*.log
+
+# Temp
+/tmp/
+temp/
+*.tmp
+static/banana.jpg
